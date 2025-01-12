@@ -43,38 +43,28 @@ public class LeitnerSystem extends StudyMethod {
     }
 
     public String getRandomCard(List<Box> otherBoxes) {
-        if (!isValidBoxList(otherBoxes)) {
-            return null;
-        }
-
-        Box combinedBox = combineBoxes(otherBoxes);
-        Integer randomCardId = combinedBox.getRandomCard();
-
-        return formatCardResponse(randomCardId);
-    }
-
-    private boolean isValidBoxList(List<Box> boxes) {
-        return boxes != null && !boxes.isEmpty();
-    }
-
-    private Box combineBoxes(List<Box> boxes) {
-        Box combinedBox = new Box();
-        for (Box box : boxes) {
-            combinedBox.addCards(box.getCards());
-        }
-        return combinedBox;
-    }
-
-    private String formatCardResponse(Integer cardId) {
-        if (cardId == null) {
+        if (otherBoxes == null || otherBoxes.isEmpty()) {
             return "No card found";
         }
-
+        Box allBoxes = new Box();
+        for (Box box : otherBoxes) {
+            allBoxes.addCards(box.getCards());
+        }
+        Integer randomCard = allBoxes.getRandomCard();
+        if (randomCard == null) {
+            return "No card found";
+        }
         CardManager manager = CardManager.getCardManager();
-        Card card = manager.getCard(cardId);
+        Card card = manager.getCard(randomCard);
+        return String.format("[%d] The random question was: %s | The answer is: %s", 
+            randomCard, card.getQuestion(), card.getAnswer());
+    }
 
-        return String.format("[%d] The random question was: %s | The answer is: %s",
-                cardId, card.getQuestion(), card.getAnswer());
+    public String getRandomCardFromBox() {
+        String response = "";
+        response += getMethodName();
+        response += getRandomCard(boxes);
+        return response;
     }
 
     public void addCardToBox(Integer id, Integer boxId) {
@@ -87,20 +77,19 @@ public class LeitnerSystem extends StudyMethod {
 
     public Card takeCardFromBox(Integer boxId) {
         Integer cardId = boxes.get(boxId).getRandomCard();
-        return this.cardManager.getCard(cardId);
+        return CardManager.getCardManager().getCard(cardId);
     }
 
     public void boxIdValidation(Integer boxId) throws Exception {
-        if (boxId == null || boxId > (boxes.size() - 1) || boxId <= 0) {
+        if (boxId == null || boxId > (boxes.size() - 1) || boxId < 0) {
             throw new Exception("Invalid box ID");
         }
     }
 
     public void upgradeCard(Integer cardId, Integer boxId) throws Exception {
         boxIdValidation(boxId);
-
         Box refBox = boxes.get(boxId);
-        if (refBox.hasCard(cardId)) {
+        if (!refBox.hasCard(cardId)) {
             throw new Exception("No card Found");
         }
         refBox.removeCard(cardId);
@@ -109,13 +98,11 @@ public class LeitnerSystem extends StudyMethod {
 
     public void downgradeCard(Integer cardId, Integer boxId) throws Exception {
         boxIdValidation(boxId);
-
         Box refBox = boxes.get(boxId);
-        if (refBox.hasCard(cardId)) {
+        if (!refBox.hasCard(cardId)) {
             throw new Exception("No card Found");
         }
         refBox.removeCard(cardId);
         boxes.get(Math.max(boxId - 1, 0)).addCard(cardId);
     }
-
 }
